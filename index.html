@@ -13,7 +13,8 @@
         const SUPABASE_URL = "https://sbwuepcnngsghbdskjko.supabase.co";
         const SUPABASE_KEY = "sb_publishable_mRpzZHyhD7OI22ipYyeT-A_TUuiYpTk";
 
-        const supabase = window.supabase.createClient(
+        // Supabase client name changed to sbClient to avoid declaration conflict
+        window.sbClient = window.supabase.createClient(
             SUPABASE_URL,
             SUPABASE_KEY
         );
@@ -79,6 +80,7 @@ let db=blank();
 
 async function load() {
     try {
+        const client = window.sbClient;
         const [
             { data: customers },
             { data: suppliers },
@@ -93,18 +95,18 @@ async function load() {
             { data: stockMoves },
             { data: finance }
         ] = await Promise.all([
-            supabase.from('customers').select('*'),
-            supabase.from('suppliers').select('*'),
-            supabase.from('vendors').select('*'),
-            supabase.from('purchases').select('*'),
-            supabase.from('sales').select('*'),
-            supabase.from('customer_payments').select('*'),
-            supabase.from('vendor_sales').select('*'),
-            supabase.from('vendor_payments').select('*'),
-            supabase.from('supplier_payments').select('*'),
-            supabase.from('expenses').select('*'),
-            supabase.from('stock_moves').select('*'),
-            supabase.from('finance').select('*')
+            client.from('customers').select('*'),
+            client.from('suppliers').select('*'),
+            client.from('vendors').select('*'),
+            client.from('purchases').select('*'),
+            client.from('sales').select('*'),
+            client.from('customer_payments').select('*'),
+            client.from('vendor_sales').select('*'),
+            client.from('vendor_payments').select('*'),
+            client.from('supplier_payments').select('*'),
+            client.from('expenses').select('*'),
+            client.from('stock_moves').select('*'),
+            client.from('finance').select('*')
         ]);
 
         const local = JSON.parse(localStorage.getItem(KEY)) || {};
@@ -165,9 +167,10 @@ function save() {
 
 async function syncToSupabase() {
     try {
-        if (db.customers.length) await supabase.from('customers').upsert(db.customers);
-        if (db.suppliers.length) await supabase.from('suppliers').upsert(db.suppliers);
-        if (db.vendors.length) await supabase.from('vendors').upsert(db.vendors);
+        const client = window.sbClient;
+        if (db.customers.length) await client.from('customers').upsert(db.customers);
+        if (db.suppliers.length) await client.from('suppliers').upsert(db.suppliers);
+        if (db.vendors.length) await client.from('vendors').upsert(db.vendors);
         
         if (db.purchases.length) {
             const mappedPurchases = db.purchases.map(p => ({
@@ -176,7 +179,7 @@ async function syncToSupabase() {
                 transport: p.transport, other: p.other, total: p.total,
                 initial_paid: p.initialPaid, method: p.method, notes: p.notes, created: p.created
             }));
-            await supabase.from('purchases').upsert(mappedPurchases);
+            await client.from('purchases').upsert(mappedPurchases);
         }
 
         if (db.sales.length) {
@@ -186,10 +189,10 @@ async function syncToSupabase() {
                 initial_paid: s.initialPaid, method: s.method, notes: s.notes,
                 unit_cost: s.unitCost, created: s.created
             }));
-            await supabase.from('sales').upsert(mappedSales);
+            await client.from('sales').upsert(mappedSales);
         }
 
-        if (db.expenses.length) await supabase.from('expenses').upsert(db.expenses);
+        if (db.expenses.length) await client.from('expenses').upsert(db.expenses);
     } catch (err) {
         console.error('Supabase Sync Error:', err);
     }
